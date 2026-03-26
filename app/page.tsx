@@ -137,10 +137,10 @@ function EstablishmentRow({
       >
         <div className="accent-line self-stretch rounded-sm" style={{ minHeight: 24 }} />
         <div className="flex-1 min-w-0 ml-2">
-          <p className="text-[15px] font-semibold tracking-tight truncate" style={{ color: "var(--text-primary)" }}>
+          <p className="text-[17px] font-semibold tracking-tight truncate" style={{ color: "var(--text-primary)" }}>
             {establishment.name}
           </p>
-          <p className="text-[12px] mt-0.5" style={{ color: "var(--text-secondary)", fontFamily: "var(--font-mono)" }}>
+          <p className="text-[14px] mt-0.5" style={{ color: "var(--text-secondary)", fontFamily: "var(--font-mono)" }}>
             {establishment.productCount} {establishment.productCount === 1 ? "product" : "products"} approved
           </p>
         </div>
@@ -222,10 +222,10 @@ export default function HomePage() {
       <div className="max-w-2xl mx-auto px-5 pt-8 pb-4">
         <div className="flex items-end justify-between">
           <div>
-            <h1 className="text-[28px] font-bold tracking-tight leading-none" style={{ color: "var(--text-primary)" }}>
+            <h1 className="text-[30px] font-bold tracking-tight leading-none" style={{ color: "var(--text-primary)" }}>
               Establishments
             </h1>
-            <p className="text-[13px] mt-2" style={{ color: "var(--text-secondary)", fontFamily: "var(--font-mono)" }}>
+            <p className="text-[15px] mt-2" style={{ color: "var(--text-secondary)", fontFamily: "var(--font-mono)" }}>
               {establishments.length} registered
             </p>
           </div>
@@ -245,8 +245,8 @@ export default function HomePage() {
       <div className="max-w-2xl mx-auto mt-0">
         {establishments.length === 0 ? (
           <div className="py-20 text-center">
-            <p className="text-[15px] font-medium" style={{ color: "var(--text-secondary)" }}>No establishments</p>
-            <p className="text-[13px] mt-1" style={{ color: "var(--text-tertiary)" }}>
+            <p className="text-[17px] font-medium" style={{ color: "var(--text-secondary)" }}>No establishments</p>
+            <p className="text-[15px] mt-1" style={{ color: "var(--text-tertiary)" }}>
               Add an establishment to begin auditing.
             </p>
           </div>
@@ -264,7 +264,7 @@ export default function HomePage() {
       {/* ── Footer ───────────────────────────── */}
       <div className="max-w-2xl mx-auto px-5 mt-8">
         <hr className="hr-sharp" />
-        <p className="text-[11px] mt-4 text-center" style={{ color: "var(--text-tertiary)", fontFamily: "var(--font-mono)" }}>
+        <p className="text-[13px] mt-4 text-center" style={{ color: "var(--text-tertiary)", fontFamily: "var(--font-mono)" }}>
           Right-click to remove a custom establishment
         </p>
       </div>

@@ -218,12 +218,12 @@ function ProductRow({
     return (
         <div className={`product-row fade-in ${verified ? "verified" : ""}`}>
             <div className="min-w-0 flex-1">
-                <p className="text-[14px] font-normal leading-snug truncate" style={{ color: "var(--text-primary)" }}>
+                <p className="text-[16px] font-normal leading-snug truncate" style={{ color: "var(--text-primary)" }}>
                     {product.productName}
                 </p>
             </div>
             <span
-                className="text-[12px] flex-shrink-0 ml-3 truncate max-w-[120px] text-right"
+                className="text-[14px] flex-shrink-0 ml-3 truncate max-w-[140px] text-right"
                 style={{ color: "var(--text-secondary)", fontFamily: "var(--font-mono)" }}
             >
                 {product.brandName}
@@ -245,16 +245,14 @@ function ProductRow({
    ═══════════════════════════════════════════════ */
 
 function generateCSV(
-    inspectorName: string,
     establishmentName: string,
     products: Product[],
     verifiedSet: Set<string>
 ): string {
     const today = new Date().toISOString().split("T")[0];
-    const headers = ["Inspector Name", "Establishment Name", "Product Name", "Brand Name", "Verified", "Date"];
+    const headers = ["Establishment Name", "Product Name", "Brand Name", "Verified", "Date"];
     const rows = products.map((p) => [
-        inspectorName,
-        establishmentName,
+        `"${establishmentName.replace(/"/g, '""')}"`,
         `"${p.productName.replace(/"/g, '""')}"`,
         `"${p.brandName.replace(/"/g, '""')}"`,
         verifiedSet.has(p.id) ? "Yes" : "No",
@@ -291,7 +289,6 @@ export default function EstablishmentPage({
     const [query, setQuery] = useState("");
     const [mounted, setMounted] = useState(false);
     const [showAddModal, setShowAddModal] = useState(false);
-    const [inspectorName, setInspectorName] = useState("");
     const [verifiedIds, setVerifiedIds] = useState<Set<string>>(new Set());
 
     const loadData = useCallback(() => {
@@ -334,11 +331,11 @@ export default function EstablishmentPage({
     const progressPct = totalCount > 0 ? (verifiedCount / totalCount) * 100 : 0;
 
     const handleGenerateReport = () => {
-        if (!establishment || !inspectorName.trim()) return;
+        if (!establishment) return;
         const today = new Date().toISOString().split("T")[0];
         const safeName = establishment.name.replace(/[^a-zA-Z0-9]/g, "_");
         const filename = `HMA_${safeName}_${today}.csv`;
-        const csv = generateCSV(inspectorName.trim(), establishment.name, allProducts, verifiedIds);
+        const csv = generateCSV(establishment.name, allProducts, verifiedIds);
         downloadCSV(csv, filename);
     };
 
@@ -388,12 +385,12 @@ export default function EstablishmentPage({
             <div className="max-w-2xl mx-auto px-5 pt-6 pb-4">
                 <Link href="/" className="inline-flex items-center gap-1 mb-4 group" style={{ color: "var(--accent)" }}>
                     <BackArrow />
-                    <span className="text-[13px] font-medium">Establishments</span>
+                    <span className="text-[14px] font-medium">Establishments</span>
                 </Link>
 
                 <div className="flex items-end justify-between">
                     <div className="min-w-0 flex-1">
-                        <h1 className="text-[28px] font-bold tracking-tight leading-none truncate" style={{ color: "var(--text-primary)" }}>
+                        <h1 className="text-[30px] font-bold tracking-tight leading-none truncate" style={{ color: "var(--text-primary)" }}>
                             {establishment.name}
                         </h1>
                     </div>
@@ -405,18 +402,6 @@ export default function EstablishmentPage({
                     )}
                 </div>
 
-                {/* ── Inspector Name ─────────────────── */}
-                <div className="mt-4">
-                    <label className="section-label block mb-1.5" htmlFor="inspector-name">Inspector Name</label>
-                    <input
-                        id="inspector-name"
-                        type="text"
-                        value={inspectorName}
-                        onChange={(e) => setInspectorName(e.target.value)}
-                        placeholder="Enter your name"
-                        className="text-input"
-                    />
-                </div>
             </div>
 
             {/* ── Divider ──────────────────────────── */}
@@ -467,10 +452,10 @@ export default function EstablishmentPage({
                 {/* Verification Progress */}
                 <div className="mb-3">
                     <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-[12px]" style={{ color: "var(--text-secondary)", fontFamily: "var(--font-mono)" }}>
+                        <span className="text-[14px]" style={{ color: "var(--text-secondary)", fontFamily: "var(--font-mono)" }}>
                             {verifiedCount} of {totalCount} products verified
                         </span>
-                        <span className="text-[12px] font-medium" style={{ color: progressPct === 100 && totalCount > 0 ? "var(--clr-success)" : "var(--text-tertiary)", fontFamily: "var(--font-mono)" }}>
+                        <span className="text-[14px] font-medium" style={{ color: progressPct === 100 && totalCount > 0 ? "var(--clr-success)" : "var(--text-tertiary)", fontFamily: "var(--font-mono)" }}>
                             {totalCount > 0 ? Math.round(progressPct) : 0}%
                         </span>
                     </div>
@@ -495,13 +480,13 @@ export default function EstablishmentPage({
             {hasResults && (
                 <div className="max-w-2xl mx-auto">
                     <div className="flex items-center px-5 py-2" style={{ borderBottom: "1px solid var(--border-default)" }}>
-                        <span className="flex-1 text-[11px] font-medium uppercase tracking-wider" style={{ color: "var(--text-tertiary)", fontFamily: "var(--font-mono)" }}>
+                        <span className="flex-1 text-[12px] font-medium uppercase tracking-wider" style={{ color: "var(--text-tertiary)", fontFamily: "var(--font-mono)" }}>
                             Product Name
                         </span>
-                        <span className="text-[11px] font-medium uppercase tracking-wider mr-3" style={{ color: "var(--text-tertiary)", fontFamily: "var(--font-mono)" }}>
+                        <span className="text-[12px] font-medium uppercase tracking-wider mr-3" style={{ color: "var(--text-tertiary)", fontFamily: "var(--font-mono)" }}>
                             Brand
                         </span>
-                        <span className="text-[11px] font-medium uppercase tracking-wider w-[22px] text-center" style={{ color: "var(--text-tertiary)", fontFamily: "var(--font-mono)" }}>
+                        <span className="text-[12px] font-medium uppercase tracking-wider w-[22px] text-center" style={{ color: "var(--text-tertiary)", fontFamily: "var(--font-mono)" }}>
                             ✓
                         </span>
                     </div>
@@ -533,22 +518,14 @@ export default function EstablishmentPage({
                     <span className="section-label block mb-3">Generate Report</span>
                     <button
                         onClick={handleGenerateReport}
-                        disabled={!inspectorName.trim()}
                         className="btn-filled w-full"
                     >
                         <DownloadIcon />
                         Generate Report
                     </button>
-                    {!inspectorName.trim() && (
-                        <p className="report-warning">
-                            Please enter inspector name before generating report
-                        </p>
-                    )}
-                    {inspectorName.trim() && (
-                        <p className="report-note">
-                            Open the downloaded CSV in Google Sheets for a full formatted report.
-                        </p>
-                    )}
+                    <p className="report-note">
+                        Downloads a CSV with all products and their verification status. Open in Google Sheets for a full formatted report.
+                    </p>
                 </div>
             </div>
 
