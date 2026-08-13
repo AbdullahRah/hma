@@ -608,69 +608,6 @@ html.light-mode {
   }
 }
 
-/* ── Import Dropzone ─────────────────────────── */
-.dropzone {
-  width: 100%;
-  border: 1px dashed var(--border-default);
-  border-radius: var(--r-sm);
-  background: var(--bg-input);
-  padding: 28px 16px;
-  text-align: center;
-  cursor: pointer;
-  transition: border-color 0.15s ease, background-color 0.15s ease;
-}
-
-.dropzone:hover,
-.dropzone.dragging {
-  border-color: var(--accent);
-  background: var(--bg-elevated);
-}
-
-.dropzone .label {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-primary);
-}
-
-.dropzone .subtext {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 12px;
-  color: var(--text-tertiary);
-  margin-top: 4px;
-}
-
-/* ── Import Summary ──────────────────────────── */
-.import-summary-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 6px 0;
-  font-size: 14px;
-  color: var(--text-secondary);
-}
-
-.import-summary-row .value {
-  font-family: 'IBM Plex Mono', monospace;
-  color: var(--text-primary);
-  font-weight: 500;
-}
-
-.import-skip-list {
-  max-height: 140px;
-  overflow-y: auto;
-  border: 1px solid var(--border-default);
-  border-radius: var(--r-sm);
-  padding: 8px 10px;
-  margin-top: 8px;
-}
-
-.import-skip-list p {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 11px;
-  color: var(--clr-destructive);
-  line-height: 1.6;
-}
-
 /* ── Safe areas ─────────────────────────────── */
 .safe-area-bottom {
   padding-bottom: max(24px, env(safe-area-inset-bottom));

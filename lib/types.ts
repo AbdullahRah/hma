@@ -23,15 +23,9 @@ export interface RawIGYProduct {
   brand: string;
 }
 
-// ─── Bulk Import ───────────────────────────────
-export interface ImportSkip {
-  row: number;
-  reason: string;
-}
-
-export interface ImportSummary {
-  establishmentsCreated: number;
-  establishmentsMatched: number;
-  productsAdded: number;
-  skipped: ImportSkip[];
+// Restaurant product lists, extracted from the HMA audit workbooks
+export interface RawRestaurant {
+  id: string;
+  name: string;
+  products: RawIGYProduct[];
 }

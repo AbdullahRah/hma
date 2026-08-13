@@ -1,18 +1,27 @@
-import { Establishment, Product, RawProduct, RawIGYProduct } from "./types";
+import { Establishment, Product, RawProduct, RawIGYProduct, RawRestaurant } from "./types";
 import rawDspotProducts from "@/data/products.json";
 import rawIgyProducts from "@/data/igy_products.json";
+import rawRestaurants from "@/data/restaurants.json";
 
 // ─── Establishments ──────────────────────────────────────
-// Pre-seeded with DSpot and IGY Immune Technologies. Add more via the UI.
+// Pre-seeded with DSpot, IGY Immune Technologies, and the audited restaurant
+// product lists. Add more via the UI.
 
 const STORAGE_KEY_ESTABLISHMENTS = "hma-establishments";
 const STORAGE_KEY_CUSTOM_PRODUCTS = "hma-custom-products";
 
-const DEFAULT_ESTABLISHMENT_IDS = ["dspot", "igy-immune"];
+const RESTAURANTS = rawRestaurants as RawRestaurant[];
+
+const DEFAULT_ESTABLISHMENT_IDS = [
+    "dspot",
+    "igy-immune",
+    ...RESTAURANTS.map((r) => r.id),
+];
 
 const DEFAULT_ESTABLISHMENTS: Establishment[] = [
     { id: "dspot", name: "DSpot", productCount: 0 },
     { id: "igy-immune", name: "IGY Immune Technologies", productCount: 0 },
+    ...RESTAURANTS.map((r) => ({ id: r.id, name: r.name, productCount: 0 })),
 ];
 
 // ─── Helpers ─────────────────────────────────────────────
@@ -107,6 +116,17 @@ function getIgyProducts(): Product[] {
     }));
 }
 
+function getRestaurantProducts(establishmentId: string): Product[] {
+    const restaurant = RESTAURANTS.find((r) => r.id === establishmentId);
+    if (!restaurant) return [];
+    return restaurant.products.map((item, index) => ({
+        id: `${restaurant.id}-${index}`,
+        establishmentId: restaurant.id,
+        productName: item.productName,
+        brandName: item.brand || "—",
+    }));
+}
+
 function getCustomProducts(): Product[] {
     if (typeof window === "undefined") return [];
     const stored = localStorage.getItem(STORAGE_KEY_CUSTOM_PRODUCTS);
@@ -119,6 +139,9 @@ export function getProductsForEstablishment(establishmentId: string): Product[] 
     }
     if (establishmentId === "igy-immune") {
         return getIgyProducts();
+    }
+    if (RESTAURANTS.some((r) => r.id === establishmentId)) {
+        return getRestaurantProducts(establishmentId);
     }
     return getCustomProducts().filter(
         (p) => p.establishmentId === establishmentId

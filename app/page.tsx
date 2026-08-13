@@ -1,14 +1,13 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   getEstablishments,
   addEstablishment,
   deleteEstablishment,
   isDefaultEstablishment,
 } from "@/lib/data";
-import { importFromCSV, importFromXLSX } from "@/lib/import";
-import { Establishment, ImportSummary } from "@/lib/types";
+import { Establishment } from "@/lib/types";
 import { useTheme } from "@/lib/theme";
 import Link from "next/link";
 
@@ -28,14 +27,6 @@ function PlusIcon({ size = 14 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 14 14" fill="none">
       <path d="M7 1V13M1 7H13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function UploadIcon({ size = 14 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 14 14" fill="none">
-      <path d="M7 10.5V1.5M7 1.5L3.5 5M7 1.5L10.5 5M1.5 12.5H12.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -120,191 +111,6 @@ function AddEstablishmentModal({
 }
 
 /* ═══════════════════════════════════════════════
-   Import Establishments Modal
-   ═══════════════════════════════════════════════ */
-
-function ImportModal({
-  isOpen,
-  onClose,
-  onImported,
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  onImported: () => void;
-}) {
-  const [dragging, setDragging] = useState(false);
-  const [fileName, setFileName] = useState<string | null>(null);
-  const [summary, setSummary] = useState<ImportSummary | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const reset = () => {
-    setDragging(false);
-    setFileName(null);
-    setSummary(null);
-    setError(null);
-  };
-
-  const handleClose = () => {
-    reset();
-    onClose();
-  };
-
-  const processFile = (file: File) => {
-    setError(null);
-    setSummary(null);
-    setFileName(file.name);
-
-    const name = file.name.toLowerCase();
-    const isExcel = name.endsWith(".xlsx");
-
-    if (!isExcel && !name.endsWith(".csv")) {
-      setError(
-        name.endsWith(".xls")
-          ? "That's the older .xls format — re-save it as .xlsx and try again."
-          : "Please upload a .xlsx or .csv file."
-      );
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      let result;
-      try {
-        result = isExcel
-          ? importFromXLSX(reader.result as ArrayBuffer)
-          : importFromCSV(reader.result as string);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Couldn't read that file.");
-        return;
-      }
-      setSummary(result);
-      if (
-        result.establishmentsCreated > 0 ||
-        result.establishmentsMatched > 0 ||
-        result.productsAdded > 0
-      ) {
-        onImported();
-      }
-    };
-    reader.onerror = () => setError("Couldn't read that file — please try again.");
-    if (isExcel) reader.readAsArrayBuffer(file);
-    else reader.readAsText(file);
-  };
-
-  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) processFile(file);
-    e.target.value = "";
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setDragging(false);
-    const file = e.dataTransfer.files?.[0];
-    if (file) processFile(file);
-  };
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="modal-backdrop" onClick={handleClose}>
-      <div className="modal-panel" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-5 pt-5 pb-3">
-          <span className="section-label">Import Establishments</span>
-          <button onClick={handleClose} className="btn-ghost !p-1.5" aria-label="Close">
-            <CloseIcon />
-          </button>
-        </div>
-
-        <div className="px-5 pb-5">
-          {!summary ? (
-            <>
-              <div
-                className={`dropzone ${dragging ? "dragging" : ""}`}
-                onClick={() => fileInputRef.current?.click()}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  setDragging(true);
-                }}
-                onDragLeave={() => setDragging(false)}
-                onDrop={handleDrop}
-              >
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".xlsx,.csv"
-                  onChange={handleFileInput}
-                  className="hidden"
-                />
-                <p className="label">
-                  {fileName ? fileName : "Drop a spreadsheet here or click to browse"}
-                </p>
-                <p className="subtext">.xlsx or .csv — establishment_name, product_name, brand</p>
-              </div>
-
-              {error && (
-                <p className="text-[13px] mt-3" style={{ color: "var(--clr-destructive)", fontFamily: "var(--font-mono)" }}>
-                  {error}
-                </p>
-              )}
-
-              <p className="text-[13px] mt-4" style={{ color: "var(--text-tertiary)", lineHeight: 1.5 }}>
-                One row per product, headers in the first row. Repeat the establishment
-                name across all of its rows — new names are created automatically,
-                existing ones get the new products appended. Only the first sheet of a
-                workbook is read.
-              </p>
-            </>
-          ) : (
-            <>
-              <div className="import-summary-row">
-                <span>Establishments created</span>
-                <span className="value">{summary.establishmentsCreated}</span>
-              </div>
-              <div className="import-summary-row">
-                <span>Establishments matched</span>
-                <span className="value">{summary.establishmentsMatched}</span>
-              </div>
-              <div className="import-summary-row">
-                <span>Products added</span>
-                <span className="value">{summary.productsAdded}</span>
-              </div>
-
-              {summary.skipped.length > 0 && (
-                <>
-                  <div className="import-summary-row">
-                    <span>Rows skipped</span>
-                    <span className="value" style={{ color: "var(--clr-destructive)" }}>
-                      {summary.skipped.length}
-                    </span>
-                  </div>
-                  <div className="import-skip-list">
-                    {summary.skipped.map((s, idx) => (
-                      <p key={idx}>
-                        Row {s.row}: {s.reason}
-                      </p>
-                    ))}
-                  </div>
-                </>
-              )}
-
-              <button onClick={reset} className="btn-outline w-full mt-4">
-                Import Another File
-              </button>
-            </>
-          )}
-
-          <button onClick={handleClose} className="btn-filled w-full mt-3">
-            Done
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ═══════════════════════════════════════════════
    Establishment Row
    ═══════════════════════════════════════════════ */
 
@@ -366,7 +172,6 @@ function EstablishmentRow({
 export default function HomePage() {
   const [establishments, setEstablishments] = useState<Establishment[]>([]);
   const [showModal, setShowModal] = useState(false);
-  const [showImportModal, setShowImportModal] = useState(false);
   const [mounted, setMounted] = useState(false);
   const { theme, toggleTheme } = useTheme();
 
@@ -424,16 +229,10 @@ export default function HomePage() {
               {establishments.length} registered
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <button onClick={() => setShowImportModal(true)} className="btn-outline !py-2 !px-4 text-[13px]" aria-label="Import establishments">
-              <UploadIcon size={12} />
-              <span>Import</span>
-            </button>
-            <button onClick={() => setShowModal(true)} className="btn-outline !py-2 !px-4 text-[13px]" aria-label="Add establishment">
-              <PlusIcon size={12} />
-              <span>Add</span>
-            </button>
-          </div>
+          <button onClick={() => setShowModal(true)} className="btn-outline !py-2 !px-4 text-[13px]" aria-label="Add establishment">
+            <PlusIcon size={12} />
+            <span>Add</span>
+          </button>
         </div>
       </div>
 
@@ -471,7 +270,6 @@ export default function HomePage() {
       </div>
 
       <AddEstablishmentModal isOpen={showModal} onClose={() => setShowModal(false)} onAdd={handleAdd} />
-      <ImportModal isOpen={showImportModal} onClose={() => setShowImportModal(false)} onImported={refresh} />
     </main>
   );
 }
