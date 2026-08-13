@@ -1,7 +1,8 @@
 import { getEstablishments, addEstablishment, addProduct, isDefaultEstablishment } from "./data";
+import { parseXLSX } from "./xlsx";
 import { ImportSummary } from "./types";
 
-// ─── CSV Import ──────────────────────────────────────────
+// ─── CSV / XLSX Import ───────────────────────────────────
 // Expected columns (header row required, any order):
 //   establishment_name   (required — also accepts "establishment")
 //   product_name          (required — also accepts "product")
@@ -62,10 +63,16 @@ export function parseCSV(text: string): string[][] {
   // flush trailing field/row if file doesn't end with a newline
   if (field.length > 0 || row.length > 0) pushRow();
 
-  return rows.filter((r) => r.some((c) => c.trim() !== ""));
+  return rows;
 }
 
-export function importFromCSV(csvText: string): ImportSummary {
+const isBlankRow = (row: string[]) => !row.some((c) => c.trim() !== "");
+
+/**
+ * Maps parsed rows onto establishments and products. Shared by the CSV and
+ * XLSX entry points — row numbers are 1-indexed to match the source file.
+ */
+export function importRows(rows: string[][]): ImportSummary {
   const summary: ImportSummary = {
     establishmentsCreated: 0,
     establishmentsMatched: 0,
@@ -73,14 +80,15 @@ export function importFromCSV(csvText: string): ImportSummary {
     skipped: [],
   };
 
-  const rows = parseCSV(csvText);
+  // Tolerate title or spacer rows sitting above the real header row.
+  const headerRow = rows.findIndex((r) => !isBlankRow(r));
 
-  if (rows.length < 2) {
+  if (headerRow === -1 || rows.length - headerRow < 2) {
     summary.skipped.push({ row: 0, reason: "File is empty or missing a header row." });
     return summary;
   }
 
-  const headers = rows[0].map(normalizeHeader);
+  const headers = rows[headerRow].map(normalizeHeader);
   const nameIdx = headers.findIndex((h) => ESTABLISHMENT_HEADERS.includes(h));
   const productIdx = headers.findIndex((h) => PRODUCT_HEADERS.includes(h));
   const brandIdx = headers.findIndex((h) => BRAND_HEADERS.includes(h));
@@ -102,12 +110,16 @@ export function importFromCSV(csvText: string): ImportSummary {
   }
   const matchedThisRun = new Set<string>();
 
-  for (let i = 1; i < rows.length; i++) {
+  for (let i = headerRow + 1; i < rows.length; i++) {
     const cols = rows[i];
+    const rowNum = i + 1; // rows are 1:1 with the source file, so +1 to 1-index
+
+    // Trailing and spacer rows are silently ignored rather than reported.
+    if (isBlankRow(cols)) continue;
+
     const establishmentName = (cols[nameIdx] || "").trim();
     const productName = (cols[productIdx] || "").trim();
     const brandName = brandIdx !== -1 ? (cols[brandIdx] || "").trim() : "";
-    const rowNum = i + 1; // +1 for 1-indexed, header already consumed
 
     if (!establishmentName || !productName) {
       summary.skipped.push({ row: rowNum, reason: "Missing establishment name or product name." });
@@ -140,4 +152,12 @@ export function importFromCSV(csvText: string): ImportSummary {
   }
 
   return summary;
+}
+
+export function importFromCSV(csvText: string): ImportSummary {
+  return importRows(parseCSV(csvText));
+}
+
+export function importFromXLSX(data: ArrayBuffer): ImportSummary {
+  return importRows(parseXLSX(data));
 }

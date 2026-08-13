@@ -7,7 +7,7 @@ import {
   deleteEstablishment,
   isDefaultEstablishment,
 } from "@/lib/data";
-import { importFromCSV } from "@/lib/import";
+import { importFromCSV, importFromXLSX } from "@/lib/import";
 import { Establishment, ImportSummary } from "@/lib/types";
 import { useTheme } from "@/lib/theme";
 import Link from "next/link";
@@ -155,15 +155,29 @@ function ImportModal({
     setSummary(null);
     setFileName(file.name);
 
-    if (!file.name.toLowerCase().endsWith(".csv")) {
-      setError("Please upload a .csv file.");
+    const name = file.name.toLowerCase();
+    const isExcel = name.endsWith(".xlsx");
+
+    if (!isExcel && !name.endsWith(".csv")) {
+      setError(
+        name.endsWith(".xls")
+          ? "That's the older .xls format — re-save it as .xlsx and try again."
+          : "Please upload a .xlsx or .csv file."
+      );
       return;
     }
 
     const reader = new FileReader();
     reader.onload = () => {
-      const text = reader.result as string;
-      const result = importFromCSV(text);
+      let result;
+      try {
+        result = isExcel
+          ? importFromXLSX(reader.result as ArrayBuffer)
+          : importFromCSV(reader.result as string);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Couldn't read that file.");
+        return;
+      }
       setSummary(result);
       if (
         result.establishmentsCreated > 0 ||
@@ -174,7 +188,8 @@ function ImportModal({
       }
     };
     reader.onerror = () => setError("Couldn't read that file — please try again.");
-    reader.readAsText(file);
+    if (isExcel) reader.readAsArrayBuffer(file);
+    else reader.readAsText(file);
   };
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -218,14 +233,14 @@ function ImportModal({
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept=".csv"
+                  accept=".xlsx,.csv"
                   onChange={handleFileInput}
                   className="hidden"
                 />
                 <p className="label">
-                  {fileName ? fileName : "Drop a CSV here or click to browse"}
+                  {fileName ? fileName : "Drop a spreadsheet here or click to browse"}
                 </p>
-                <p className="subtext">establishment_name, product_name, brand</p>
+                <p className="subtext">.xlsx or .csv — establishment_name, product_name, brand</p>
               </div>
 
               {error && (
@@ -235,9 +250,10 @@ function ImportModal({
               )}
 
               <p className="text-[13px] mt-4" style={{ color: "var(--text-tertiary)", lineHeight: 1.5 }}>
-                One row per product. Repeat the establishment name across all of its
-                rows — new names are created automatically, existing ones get the new
-                products appended.
+                One row per product, headers in the first row. Repeat the establishment
+                name across all of its rows — new names are created automatically,
+                existing ones get the new products appended. Only the first sheet of a
+                workbook is read.
               </p>
             </>
           ) : (
