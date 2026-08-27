@@ -5,7 +5,9 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "build:data": "node scripts/build-data.mjs",
+    "check:data": "node scripts/check-data.mjs"
   },
   "dependencies": {
     "next": "16.1.6",

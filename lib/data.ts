@@ -1,171 +1,87 @@
-import { Establishment, Product, RawProduct, RawIGYProduct, RawRestaurant } from "./types";
-import rawDspotProducts from "@/data/products.json";
-import rawIgyProducts from "@/data/igy_products.json";
-import rawRestaurants from "@/data/restaurants.json";
+import { Establishment, Product, RawEstablishment } from "./types";
+import rawEstablishments from "@/data/establishments.json";
 
 // ─── Establishments ──────────────────────────────────────
-// Pre-seeded with DSpot, IGY Immune Technologies, and the audited restaurant
-// product lists. Add more via the UI.
+// One baked-in source of truth for every audited product sheet — the
+// restaurants, D Spot and IGY alike. The list is read-only: establishments come
+// from the audit workbooks, not from the UI.
 
-const STORAGE_KEY_ESTABLISHMENTS = "hma-establishments";
-const STORAGE_KEY_CUSTOM_PRODUCTS = "hma-custom-products";
+const SHEETS = rawEstablishments as RawEstablishment[];
 
-const RESTAURANTS = rawRestaurants as RawRestaurant[];
+const SHEETS_BY_ID = new Map(SHEETS.map((s) => [s.id, s]));
 
-const DEFAULT_ESTABLISHMENT_IDS = [
-    "dspot",
-    "igy-immune",
-    ...RESTAURANTS.map((r) => r.id),
-];
-
-const DEFAULT_ESTABLISHMENTS: Establishment[] = [
-    { id: "dspot", name: "DSpot", productCount: 0 },
-    { id: "igy-immune", name: "IGY Immune Technologies", productCount: 0 },
-    ...RESTAURANTS.map((r) => ({ id: r.id, name: r.name, productCount: 0 })),
-];
+const ESTABLISHMENTS: Establishment[] = SHEETS.map((s) => ({
+    id: s.id,
+    name: s.name,
+    productCount: s.products.length,
+}));
 
 // ─── Helpers ─────────────────────────────────────────────
 
-function generateId(): string {
-    return Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
+const collator = new Intl.Collator("en", { sensitivity: "base", numeric: true });
+
+/** Alphabetical by name — the order every list in the tool is shown in. */
+function byName<T extends { name: string }>(a: T, b: T): number {
+    return collator.compare(a.name, b.name);
 }
 
-// ─── Establishments CRUD ─────────────────────────────────
+function byProductName(a: Product, b: Product): number {
+    return (
+        collator.compare(a.productName, b.productName) ||
+        collator.compare(a.brandName, b.brandName)
+    );
+}
+
+// ─── Establishments (read-only) ──────────────────────────
 
 export function getEstablishments(): Establishment[] {
-    if (typeof window === "undefined") return DEFAULT_ESTABLISHMENTS;
-
-    const stored = localStorage.getItem(STORAGE_KEY_ESTABLISHMENTS);
-    let establishments: Establishment[] = stored
-        ? JSON.parse(stored)
-        : [...DEFAULT_ESTABLISHMENTS];
-
-    // Ensure default establishments always exist
-    for (const def of DEFAULT_ESTABLISHMENTS) {
-        if (!establishments.find((e) => e.id === def.id)) {
-            establishments = [def, ...establishments];
-        }
-    }
-
-    // Recompute product counts
-    establishments = establishments.map((e) => ({
+    return ESTABLISHMENTS.map((e) => ({
         ...e,
         productCount: getProductsForEstablishment(e.id).length,
-    }));
-
-    return establishments;
-}
-
-export function addEstablishment(name: string): Establishment {
-    const establishments = getEstablishments();
-    const newEstablishment: Establishment = {
-        id: generateId(),
-        name: name.trim(),
-        productCount: 0,
-    };
-    establishments.push(newEstablishment);
-    localStorage.setItem(
-        STORAGE_KEY_ESTABLISHMENTS,
-        JSON.stringify(establishments)
-    );
-    return newEstablishment;
-}
-
-export function deleteEstablishment(id: string): void {
-    if (DEFAULT_ESTABLISHMENT_IDS.includes(id)) return; // Protect defaults
-    const establishments = getEstablishments().filter((e) => e.id !== id);
-    localStorage.setItem(
-        STORAGE_KEY_ESTABLISHMENTS,
-        JSON.stringify(establishments)
-    );
-    // Also remove custom products for this establishment
-    const customProducts = getCustomProducts().filter(
-        (p) => p.establishmentId !== id
-    );
-    localStorage.setItem(
-        STORAGE_KEY_CUSTOM_PRODUCTS,
-        JSON.stringify(customProducts)
-    );
+    })).sort(byName);
 }
 
 export function getEstablishmentById(id: string): Establishment | undefined {
     return getEstablishments().find((e) => e.id === id);
 }
 
-export function isDefaultEstablishment(id: string): boolean {
-    return DEFAULT_ESTABLISHMENT_IDS.includes(id);
+/** Where an establishment's list came from, and how old it is. */
+export function getSheetInfo(id: string): {
+    source: string;
+    sheetDate: string;
+    monthsOld: number | null;
+} | undefined {
+    const sheet = SHEETS_BY_ID.get(id);
+    if (!sheet) return undefined;
+    let monthsOld: number | null = null;
+    if (sheet.sheetDate) {
+        const then = new Date(sheet.sheetDate);
+        if (!Number.isNaN(then.getTime())) {
+            const now = new Date();
+            monthsOld =
+                (now.getFullYear() - then.getFullYear()) * 12 +
+                (now.getMonth() - then.getMonth());
+        }
+    }
+    return { source: sheet.source, sheetDate: sheet.sheetDate, monthsOld };
 }
 
 // ─── Products ────────────────────────────────────────────
 
-function getDspotProducts(): Product[] {
-    return (rawDspotProducts as RawProduct[]).map((item, index) => ({
-        id: `dspot-${index}`,
-        establishmentId: "dspot",
-        productName: item["Product Name"],
-        brandName: item["Brand"] || "—",
-    }));
-}
-
-function getIgyProducts(): Product[] {
-    return (rawIgyProducts as RawIGYProduct[]).map((item, index) => ({
-        id: `igy-${index}`,
-        establishmentId: "igy-immune",
+function getSheetProducts(establishmentId: string): Product[] {
+    const sheet = SHEETS_BY_ID.get(establishmentId);
+    if (!sheet) return [];
+    return sheet.products.map((item, index) => ({
+        id: `${sheet.id}-${index}`,
+        establishmentId: sheet.id,
         productName: item.productName,
         brandName: item.brand || "—",
+        ruling: item.ruling,
     }));
-}
-
-function getRestaurantProducts(establishmentId: string): Product[] {
-    const restaurant = RESTAURANTS.find((r) => r.id === establishmentId);
-    if (!restaurant) return [];
-    return restaurant.products.map((item, index) => ({
-        id: `${restaurant.id}-${index}`,
-        establishmentId: restaurant.id,
-        productName: item.productName,
-        brandName: item.brand || "—",
-    }));
-}
-
-function getCustomProducts(): Product[] {
-    if (typeof window === "undefined") return [];
-    const stored = localStorage.getItem(STORAGE_KEY_CUSTOM_PRODUCTS);
-    return stored ? JSON.parse(stored) : [];
 }
 
 export function getProductsForEstablishment(establishmentId: string): Product[] {
-    if (establishmentId === "dspot") {
-        return getDspotProducts();
-    }
-    if (establishmentId === "igy-immune") {
-        return getIgyProducts();
-    }
-    if (RESTAURANTS.some((r) => r.id === establishmentId)) {
-        return getRestaurantProducts(establishmentId);
-    }
-    return getCustomProducts().filter(
-        (p) => p.establishmentId === establishmentId
-    );
-}
-
-export function addProduct(
-    establishmentId: string,
-    productName: string,
-    brandName: string
-): Product {
-    const customProducts = getCustomProducts();
-    const newProduct: Product = {
-        id: generateId(),
-        establishmentId,
-        productName: productName.trim(),
-        brandName: brandName.trim() || "—",
-    };
-    customProducts.push(newProduct);
-    localStorage.setItem(
-        STORAGE_KEY_CUSTOM_PRODUCTS,
-        JSON.stringify(customProducts)
-    );
-    return newProduct;
+    return getSheetProducts(establishmentId).sort(byProductName);
 }
 
 export function searchProducts(
@@ -179,4 +95,46 @@ export function searchProducts(
             p.productName.toLowerCase().includes(q) ||
             p.brandName.toLowerCase().includes(q)
     );
+}
+
+// ─── Audit progress ──────────────────────────────────────
+// Verification ticks are the one thing the inspector creates, so they survive a
+// refresh, a backgrounded tab, or a phone that decides to reload the page
+// mid-walkthrough. Scoped per establishment and keyed by product id.
+
+const STORAGE_KEY_VERIFIED = "hma-verified";
+
+type VerifiedStore = Record<string, string[]>;
+
+function readVerifiedStore(): VerifiedStore {
+    if (typeof window === "undefined") return {};
+    try {
+        const stored = localStorage.getItem(STORAGE_KEY_VERIFIED);
+        return stored ? (JSON.parse(stored) as VerifiedStore) : {};
+    } catch {
+        return {}; // corrupt or unavailable storage must not break the audit
+    }
+}
+
+export function getVerifiedIds(establishmentId: string): Set<string> {
+    return new Set(readVerifiedStore()[establishmentId] ?? []);
+}
+
+export function saveVerifiedIds(establishmentId: string, ids: Set<string>): void {
+    if (typeof window === "undefined") return;
+    try {
+        const store = readVerifiedStore();
+        if (ids.size === 0) {
+            delete store[establishmentId];
+        } else {
+            store[establishmentId] = [...ids];
+        }
+        localStorage.setItem(STORAGE_KEY_VERIFIED, JSON.stringify(store));
+    } catch {
+        // Storage full or blocked — the audit continues in memory.
+    }
+}
+
+export function clearVerifiedIds(establishmentId: string): void {
+    saveVerifiedIds(establishmentId, new Set());
 }

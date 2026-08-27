@@ -4,28 +4,38 @@ export interface Establishment {
   productCount: number;
 }
 
+/** The ruling recorded on the audit sheet for a product. */
+export type Ruling =
+  | "HMA Certified"
+  | "Approved"
+  | "Not Approved"
+  | "Cancelled"
+  | "Under Review";
+
 export interface Product {
   id: string;
   establishmentId: string;
   productName: string;
   brandName: string;
+  ruling: Ruling;
 }
 
-// DSpot JSON shape
+// ─── Shape of data/establishments.json ───────────────────
+// Built by `npm run build:data` from the audit workbooks. Every product sheet
+// normalizes to this one shape — see data/README.md for the guardrails.
+
 export interface RawProduct {
-  "Product Name": string;
-  "Brand": string;
-}
-
-// IGY JSON shape
-export interface RawIGYProduct {
   productName: string;
   brand: string;
+  ruling: Ruling;
 }
 
-// Restaurant product lists, extracted from the HMA audit workbooks
-export interface RawRestaurant {
+export interface RawEstablishment {
   id: string;
   name: string;
-  products: RawIGYProduct[];
+  /** Workbook the list was built from, e.g. "Product List - Adana Kebab - 2025-07-15.xlsx". */
+  source: string;
+  /** Date on that workbook, "YYYY-MM-DD", or "" when the source carries none. */
+  sheetDate: string;
+  products: RawProduct[];
 }

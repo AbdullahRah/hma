@@ -5,8 +5,10 @@ import {
     getEstablishmentById,
     getProductsForEstablishment,
     searchProducts,
-    addProduct,
-    isDefaultEstablishment,
+    getSheetInfo,
+    getVerifiedIds,
+    saveVerifiedIds,
+    clearVerifiedIds,
 } from "@/lib/data";
 import { Establishment, Product } from "@/lib/types";
 import { useTheme } from "@/lib/theme";
@@ -48,22 +50,6 @@ function ExternalLinkIcon() {
     return (
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none" className="ext-link-icon">
             <path d="M5 1H2C1.44772 1 1 1.44772 1 2V10C1 10.5523 1.44772 11 2 11H10C10.5523 11 11 10.5523 11 10V7M8 1H11M11 1V4M11 1L5 7" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-    );
-}
-
-function PlusIcon() {
-    return (
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-            <path d="M6 1V11M1 6H11" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-        </svg>
-    );
-}
-
-function CloseIcon() {
-    return (
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path d="M3 3L11 11M11 3L3 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
         </svg>
     );
 }
@@ -139,70 +125,6 @@ function MissingProductCTA({ searchTerm }: { searchTerm?: string }) {
 }
 
 /* ═══════════════════════════════════════════════
-   Add Product Modal
-   ═══════════════════════════════════════════════ */
-
-function AddProductModal({
-    isOpen,
-    onClose,
-    onAdd,
-}: {
-    isOpen: boolean;
-    onClose: () => void;
-    onAdd: (productName: string, brandName: string) => void;
-}) {
-    const [productName, setProductName] = useState("");
-    const [brandName, setBrandName] = useState("");
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (productName.trim()) {
-            onAdd(productName, brandName);
-            setProductName("");
-            setBrandName("");
-            onClose();
-        }
-    };
-
-    if (!isOpen) return null;
-
-    return (
-        <div className="modal-backdrop" onClick={onClose}>
-            <div className="modal-panel" onClick={(e) => e.stopPropagation()}>
-                <div className="flex items-center justify-between px-5 pt-5 pb-3">
-                    <span className="section-label">Add Product</span>
-                    <button onClick={onClose} className="btn-ghost !p-1.5" aria-label="Close">
-                        <CloseIcon />
-                    </button>
-                </div>
-                <form onSubmit={handleSubmit} className="px-5 pb-5 space-y-3">
-                    <input
-                        type="text"
-                        value={productName}
-                        onChange={(e) => setProductName(e.target.value)}
-                        placeholder="product_name"
-                        autoFocus
-                        className="search-input"
-                        style={{ paddingLeft: "14px" }}
-                    />
-                    <input
-                        type="text"
-                        value={brandName}
-                        onChange={(e) => setBrandName(e.target.value)}
-                        placeholder="brand_name (optional)"
-                        className="search-input"
-                        style={{ paddingLeft: "14px" }}
-                    />
-                    <button type="submit" disabled={!productName.trim()} className="btn-filled w-full">
-                        Add Product
-                    </button>
-                </form>
-            </div>
-        </div>
-    );
-}
-
-/* ═══════════════════════════════════════════════
    Product Row (with verify toggle)
    ═══════════════════════════════════════════════ */
 
@@ -215,28 +137,24 @@ function ProductRow({
     verified: boolean;
     onToggle: () => void;
 }) {
+    // The whole row is the tap target — in the field this gets used one-handed,
+    // often with gloves, so aiming at a checkbox is not realistic.
     return (
-        <div className={`product-row fade-in ${verified ? "verified" : ""}`}>
-            <div className="min-w-0 flex-1">
-                <p className="text-[16px] font-normal leading-snug truncate" style={{ color: "var(--text-primary)" }}>
-                    {product.productName}
-                </p>
-            </div>
-            <span
-                className="text-[14px] flex-shrink-0 ml-3 truncate max-w-[140px] text-right"
-                style={{ color: "var(--text-secondary)", fontFamily: "var(--font-mono)" }}
-            >
-                {product.brandName}
-            </span>
-            <button
-                onClick={onToggle}
-                className={`verify-toggle ${verified ? "checked" : ""}`}
-                aria-label={verified ? "Unverify product" : "Verify product"}
-                title={verified ? "Verified" : "Click to verify"}
-            >
+        <button
+            type="button"
+            onClick={onToggle}
+            aria-pressed={verified}
+            className={`product-row fade-in ${verified ? "verified" : ""}`}
+        >
+            <span className="product-name">{product.productName}</span>
+            <span className="product-brand">{product.brandName}</span>
+            <span className={`verify-toggle ${verified ? "checked" : ""}`} aria-hidden="true">
                 {verified && <CheckIcon />}
-            </button>
-        </div>
+            </span>
+            <span className="sr-only">
+                {verified ? "Verified — tap to clear" : "Not verified — tap to verify"}
+            </span>
+        </button>
     );
 }
 
@@ -288,7 +206,6 @@ export default function EstablishmentPage({
     const [allProducts, setAllProducts] = useState<Product[]>([]);
     const [query, setQuery] = useState("");
     const [mounted, setMounted] = useState(false);
-    const [showAddModal, setShowAddModal] = useState(false);
     const [verifiedIds, setVerifiedIds] = useState<Set<string>>(new Set());
 
     const loadData = useCallback(() => {
@@ -296,6 +213,7 @@ export default function EstablishmentPage({
         if (est) {
             setEstablishment(est);
             setAllProducts(getProductsForEstablishment(resolvedParams.id));
+            setVerifiedIds(getVerifiedIds(resolvedParams.id));
         }
     }, [resolvedParams.id]);
 
@@ -309,22 +227,26 @@ export default function EstablishmentPage({
         [allProducts, query]
     );
 
-    const handleAddProduct = (productName: string, brandName: string) => {
-        addProduct(resolvedParams.id, productName, brandName);
-        loadData();
-    };
+    const toggleVerified = useCallback(
+        (productId: string) => {
+            setVerifiedIds((prev) => {
+                const next = new Set(prev);
+                if (next.has(productId)) {
+                    next.delete(productId);
+                } else {
+                    next.add(productId);
+                }
+                saveVerifiedIds(resolvedParams.id, next);
+                return next;
+            });
+        },
+        [resolvedParams.id]
+    );
 
-    const toggleVerified = useCallback((productId: string) => {
-        setVerifiedIds((prev) => {
-            const next = new Set(prev);
-            if (next.has(productId)) {
-                next.delete(productId);
-            } else {
-                next.add(productId);
-            }
-            return next;
-        });
-    }, []);
+    const resetVerified = useCallback(() => {
+        clearVerifiedIds(resolvedParams.id);
+        setVerifiedIds(new Set());
+    }, [resolvedParams.id]);
 
     const verifiedCount = allProducts.filter((p) => verifiedIds.has(p.id)).length;
     const totalCount = allProducts.length;
@@ -364,6 +286,7 @@ export default function EstablishmentPage({
 
     const hasResults = filteredProducts.length > 0;
     const isSearching = query.trim().length > 0;
+    const sheetInfo = getSheetInfo(resolvedParams.id);
 
     return (
         <main className="min-h-screen safe-area-bottom slide-in" style={{ background: "var(--bg-base)" }}>
@@ -371,9 +294,9 @@ export default function EstablishmentPage({
             <div className="top-bar">
                 <div className="max-w-2xl mx-auto w-full flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <span className="wordmark">staqtech</span>
+                        <span className="wordmark">HMA</span>
                         <span style={{ color: "var(--border-default)" }}>|</span>
-                        <span className="tool-label">HMA Audit Tool</span>
+                        <span className="tool-label">Audit Tool</span>
                     </div>
                     <button onClick={toggleTheme} className="theme-toggle" aria-label="Toggle theme" title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}>
                         {theme === "dark" ? <SunIcon /> : <MoonIcon />}
@@ -388,19 +311,17 @@ export default function EstablishmentPage({
                     <span className="text-[14px] font-medium">Establishments</span>
                 </Link>
 
-                <div className="flex items-end justify-between">
-                    <div className="min-w-0 flex-1">
-                        <h1 className="text-[30px] font-bold tracking-tight leading-none truncate" style={{ color: "var(--text-primary)" }}>
-                            {establishment.name}
-                        </h1>
-                    </div>
-                    {!isDefaultEstablishment(resolvedParams.id) && (
-                        <button onClick={() => setShowAddModal(true)} className="btn-outline !py-2 !px-4 text-[13px]" aria-label="Add product">
-                            <PlusIcon />
-                            <span>Add</span>
-                        </button>
-                    )}
-                </div>
+                <h1 className="text-[30px] font-bold tracking-tight leading-none truncate" style={{ color: "var(--text-primary)" }}>
+                    {establishment.name}
+                </h1>
+                {sheetInfo?.sheetDate && (
+                    <p className="sheet-meta mt-1.5" title={sheetInfo.source}>
+                        Sheet dated {sheetInfo.sheetDate}
+                        {sheetInfo.monthsOld !== null && sheetInfo.monthsOld >= 24 && (
+                            <span className="sheet-stale"> · {Math.floor(sheetInfo.monthsOld / 12)}+ years old</span>
+                        )}
+                    </p>
+                )}
 
             </div>
 
@@ -451,23 +372,44 @@ export default function EstablishmentPage({
 
                 {/* Verification Progress */}
                 <div className="mb-3">
-                    <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-[14px]" style={{ color: "var(--text-secondary)", fontFamily: "var(--font-mono)" }}>
-                            {verifiedCount} of {totalCount} products verified
+                    <div className="flex items-center justify-between mb-1.5 gap-3">
+                        <span className="progress-label">
+                            <strong>{verifiedCount}</strong> of {totalCount} verified
                         </span>
-                        <span className="text-[14px] font-medium" style={{ color: progressPct === 100 && totalCount > 0 ? "var(--clr-success)" : "var(--text-tertiary)", fontFamily: "var(--font-mono)" }}>
-                            {totalCount > 0 ? Math.round(progressPct) : 0}%
-                        </span>
+                        <div className="flex items-center gap-3">
+                            {verifiedCount > 0 && (
+                                <button onClick={resetVerified} className="reset-link">
+                                    Reset
+                                </button>
+                            )}
+                            <span
+                                className="progress-pct"
+                                style={{ color: progressPct === 100 && totalCount > 0 ? "var(--clr-success)" : "var(--text-tertiary)" }}
+                            >
+                                {totalCount > 0 ? Math.round(progressPct) : 0}%
+                            </span>
+                        </div>
                     </div>
-                    <div className="progress-bar-track">
+                    <div
+                        className="progress-bar-track"
+                        role="progressbar"
+                        aria-valuenow={Math.round(progressPct)}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        aria-label="Products verified"
+                    >
                         <div className="progress-bar-fill" style={{ width: `${progressPct}%` }} />
                     </div>
                 </div>
 
                 {/* Meta row */}
                 <div className="flex items-center justify-between">
-                    <span className="section-label">Approved Products</span>
-                    <span className="count-chip">{filteredProducts.length}</span>
+                    <span className="section-label">
+                        {isSearching ? "Matching Products" : "Products"}
+                    </span>
+                    <span className="count-chip">
+                        {isSearching ? `${filteredProducts.length} of ${totalCount}` : totalCount}
+                    </span>
                 </div>
             </div>
 
@@ -480,13 +422,13 @@ export default function EstablishmentPage({
             {hasResults && (
                 <div className="max-w-2xl mx-auto">
                     <div className="flex items-center px-5 py-2" style={{ borderBottom: "1px solid var(--border-default)" }}>
-                        <span className="flex-1 text-[12px] font-medium uppercase tracking-wider" style={{ color: "var(--text-tertiary)", fontFamily: "var(--font-mono)" }}>
+                        <span className="flex-1 text-[12px] font-medium uppercase tracking-wider" style={{ color: "var(--text-tertiary)" }}>
                             Product Name
                         </span>
-                        <span className="text-[12px] font-medium uppercase tracking-wider mr-3" style={{ color: "var(--text-tertiary)", fontFamily: "var(--font-mono)" }}>
+                        <span className="text-[12px] font-medium uppercase tracking-wider mr-3" style={{ color: "var(--text-tertiary)" }}>
                             Brand
                         </span>
-                        <span className="text-[12px] font-medium uppercase tracking-wider w-[22px] text-center" style={{ color: "var(--text-tertiary)", fontFamily: "var(--font-mono)" }}>
+                        <span className="text-[12px] font-medium uppercase tracking-wider w-[28px] text-center" style={{ color: "var(--text-tertiary)" }}>
                             ✓
                         </span>
                     </div>
@@ -529,7 +471,6 @@ export default function EstablishmentPage({
                 </div>
             </div>
 
-            <AddProductModal isOpen={showAddModal} onClose={() => setShowAddModal(false)} onAdd={handleAddProduct} />
         </main>
     );
 }

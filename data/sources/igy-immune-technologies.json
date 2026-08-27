@@ -1,0 +1,13 @@
+{
+  "name": "IGY Immune Technologies",
+  "source": "Manually maintained — no audit workbook issued for this client.",
+  "sheetDate": "",
+  "products": [
+    { "productName": "Caustic Soda 50% Solution MEM", "brand": "Univar Solutions", "ruling": "" },
+    { "productName": "Citric Acid Anhydrous", "brand": "Jungbunzlauer", "ruling": "" },
+    { "productName": "Egg Yolk", "brand": "", "ruling": "" },
+    { "productName": "Muno-Igy", "brand": "Igy Life Sciences", "ruling": "" },
+    { "productName": "Sodium Hydroxide, Pellet", "brand": "Avantor Performance Materials", "ruling": "" },
+    { "productName": "Trisodium Citrate Dyhydrate TSC F6000", "brand": "Jungbunzlauer", "ruling": "" }
+  ]
+}

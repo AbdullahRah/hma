@@ -1,12 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import {
-  getEstablishments,
-  addEstablishment,
-  deleteEstablishment,
-  isDefaultEstablishment,
-} from "@/lib/data";
+import { useState, useEffect } from "react";
+import { getEstablishments } from "@/lib/data";
 import { Establishment } from "@/lib/types";
 import { useTheme } from "@/lib/theme";
 import Link from "next/link";
@@ -19,22 +14,6 @@ function ChevronRight() {
   return (
     <svg width="7" height="12" viewBox="0 0 7 12" fill="none">
       <path d="M1 1L6 6L1 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function PlusIcon({ size = 14 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 14 14" fill="none">
-      <path d="M7 1V13M1 7H13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function CloseIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-      <path d="M3 3L11 11M11 3L3 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
     </svg>
   );
 }
@@ -57,86 +36,14 @@ function MoonIcon() {
 }
 
 /* ═══════════════════════════════════════════════
-   Add Establishment Modal
-   ═══════════════════════════════════════════════ */
-
-function AddEstablishmentModal({
-  isOpen,
-  onClose,
-  onAdd,
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  onAdd: (name: string) => void;
-}) {
-  const [name, setName] = useState("");
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (name.trim()) {
-      onAdd(name);
-      setName("");
-      onClose();
-    }
-  };
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal-panel" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-5 pt-5 pb-3">
-          <span className="section-label">New Establishment</span>
-          <button onClick={onClose} className="btn-ghost !p-1.5" aria-label="Close">
-            <CloseIcon />
-          </button>
-        </div>
-        <form onSubmit={handleSubmit} className="px-5 pb-5">
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="establishment_name"
-            autoFocus
-            className="search-input mb-4"
-            style={{ paddingLeft: "14px" }}
-          />
-          <button type="submit" disabled={!name.trim()} className="btn-filled w-full">
-            Add Establishment
-          </button>
-        </form>
-      </div>
-    </div>
-  );
-}
-
-/* ═══════════════════════════════════════════════
    Establishment Row
    ═══════════════════════════════════════════════ */
 
-function EstablishmentRow({
-  establishment,
-  onDelete,
-}: {
-  establishment: Establishment;
-  onDelete?: (id: string) => void;
-}) {
-  const [confirmDelete, setConfirmDelete] = useState(false);
-
+function EstablishmentRow({ establishment }: { establishment: Establishment }) {
   return (
     <div className="fade-in">
-      <Link
-        href={`/establishment/${establishment.id}`}
-        className="est-row"
-        onContextMenu={(e) => {
-          if (!isDefaultEstablishment(establishment.id) && onDelete) {
-            e.preventDefault();
-            setConfirmDelete(!confirmDelete);
-          }
-        }}
-      >
-        <div className="accent-line self-stretch rounded-sm" style={{ minHeight: 24 }} />
-        <div className="flex-1 min-w-0 ml-2">
+      <Link href={`/establishment/${establishment.id}`} className="est-row">
+        <div className="flex-1 min-w-0">
           <p className="text-[17px] font-semibold tracking-tight truncate" style={{ color: "var(--text-primary)" }}>
             {establishment.name}
           </p>
@@ -148,19 +55,6 @@ function EstablishmentRow({
           <ChevronRight />
         </span>
       </Link>
-
-      {confirmDelete && onDelete && (
-        <div className="flex items-center justify-end gap-2 px-5 py-2.5" style={{ background: "var(--bg-elevated)", borderBottom: "1px solid var(--border-default)" }}>
-          <button onClick={() => setConfirmDelete(false)} className="btn-ghost text-[13px]">Cancel</button>
-          <button
-            onClick={() => { onDelete(establishment.id); setConfirmDelete(false); }}
-            className="text-[13px] font-semibold px-3 py-1.5 rounded"
-            style={{ color: "var(--clr-destructive)" }}
-          >
-            Delete
-          </button>
-        </div>
-      )}
     </div>
   );
 }
@@ -171,28 +65,13 @@ function EstablishmentRow({
 
 export default function HomePage() {
   const [establishments, setEstablishments] = useState<Establishment[]>([]);
-  const [showModal, setShowModal] = useState(false);
   const [mounted, setMounted] = useState(false);
   const { theme, toggleTheme } = useTheme();
 
-  const refresh = useCallback(() => {
-    setEstablishments(getEstablishments());
-  }, []);
-
   useEffect(() => {
     setMounted(true);
-    refresh();
-  }, [refresh]);
-
-  const handleAdd = (name: string) => {
-    addEstablishment(name);
-    refresh();
-  };
-
-  const handleDelete = (id: string) => {
-    deleteEstablishment(id);
-    refresh();
-  };
+    setEstablishments(getEstablishments());
+  }, []);
 
   if (!mounted) {
     return (
@@ -208,9 +87,9 @@ export default function HomePage() {
       <div className="top-bar">
         <div className="max-w-2xl mx-auto w-full flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="wordmark">staqtech</span>
+            <span className="wordmark">HMA</span>
             <span style={{ color: "var(--border-default)" }}>|</span>
-            <span className="tool-label">HMA Audit Tool</span>
+            <span className="tool-label">Audit Tool</span>
           </div>
           <button onClick={toggleTheme} className="theme-toggle" aria-label="Toggle theme" title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}>
             {theme === "dark" ? <SunIcon /> : <MoonIcon />}
@@ -220,20 +99,12 @@ export default function HomePage() {
 
       {/* ── Page Header ──────────────────────── */}
       <div className="max-w-2xl mx-auto px-5 pt-8 pb-4">
-        <div className="flex items-end justify-between">
-          <div>
-            <h1 className="text-[30px] font-bold tracking-tight leading-none" style={{ color: "var(--text-primary)" }}>
-              Establishments
-            </h1>
-            <p className="text-[15px] mt-2" style={{ color: "var(--text-secondary)", fontFamily: "var(--font-mono)" }}>
-              {establishments.length} registered
-            </p>
-          </div>
-          <button onClick={() => setShowModal(true)} className="btn-outline !py-2 !px-4 text-[13px]" aria-label="Add establishment">
-            <PlusIcon size={12} />
-            <span>Add</span>
-          </button>
-        </div>
+        <h1 className="text-[30px] font-bold tracking-tight leading-none" style={{ color: "var(--text-primary)" }}>
+          Establishments
+        </h1>
+        <p className="text-[15px] mt-2" style={{ color: "var(--text-secondary)", fontFamily: "var(--font-mono)" }}>
+          {establishments.length} registered
+        </p>
       </div>
 
       {/* ── Divider ──────────────────────────── */}
@@ -243,33 +114,15 @@ export default function HomePage() {
 
       {/* ── List ─────────────────────────────── */}
       <div className="max-w-2xl mx-auto mt-0">
-        {establishments.length === 0 ? (
-          <div className="py-20 text-center">
-            <p className="text-[17px] font-medium" style={{ color: "var(--text-secondary)" }}>No establishments</p>
-            <p className="text-[15px] mt-1" style={{ color: "var(--text-tertiary)" }}>
-              Add an establishment to begin auditing.
-            </p>
-          </div>
-        ) : (
-          establishments.map((est) => (
-            <EstablishmentRow
-              key={est.id}
-              establishment={est}
-              onDelete={!isDefaultEstablishment(est.id) ? handleDelete : undefined}
-            />
-          ))
-        )}
+        {establishments.map((est) => (
+          <EstablishmentRow key={est.id} establishment={est} />
+        ))}
       </div>
 
       {/* ── Footer ───────────────────────────── */}
       <div className="max-w-2xl mx-auto px-5 mt-8">
         <hr className="hr-sharp" />
-        <p className="text-[13px] mt-4 text-center" style={{ color: "var(--text-tertiary)", fontFamily: "var(--font-mono)" }}>
-          Right-click to remove a custom establishment
-        </p>
       </div>
-
-      <AddEstablishmentModal isOpen={showModal} onClose={() => setShowModal(false)} onAdd={handleAdd} />
     </main>
   );
 }
