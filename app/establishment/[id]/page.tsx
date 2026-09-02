@@ -10,7 +10,7 @@ import {
     saveVerifiedIds,
     clearVerifiedIds,
 } from "@/lib/data";
-import { Establishment, Product } from "@/lib/types";
+import { Establishment, Product, isApproved, isFlagged } from "@/lib/types";
 import { useTheme } from "@/lib/theme";
 import Link from "next/link";
 
@@ -139,14 +139,25 @@ function ProductRow({
 }) {
     // The whole row is the tap target — in the field this gets used one-handed,
     // often with gloves, so aiming at a checkbox is not realistic.
+    const flagged = isFlagged(product.ruling);
+    // Approved is the norm, so it goes unlabelled — a badge on every row would
+    // be noise. Only a ruling that changes what the inspector does gets called out.
+    const showRuling = flagged || product.ruling === "Under Review";
     return (
         <button
             type="button"
             onClick={onToggle}
             aria-pressed={verified}
-            className={`product-row fade-in ${verified ? "verified" : ""}`}
+            className={`product-row fade-in ${verified ? "verified" : ""} ${flagged ? "flagged" : ""}`}
         >
-            <span className="product-name">{product.productName}</span>
+            <span className="product-name">
+                {product.productName}
+                {showRuling && (
+                    <span className={`ruling-tag ${flagged ? "flagged" : "review"}`}>
+                        {product.ruling}
+                    </span>
+                )}
+            </span>
             <span className="product-brand">{product.brandName}</span>
             <span className={`verify-toggle ${verified ? "checked" : ""}`} aria-hidden="true">
                 {verified && <CheckIcon />}
@@ -168,11 +179,15 @@ function generateCSV(
     verifiedSet: Set<string>
 ): string {
     const today = new Date().toISOString().split("T")[0];
-    const headers = ["Establishment Name", "Product Name", "Brand Name", "Verified", "Date"];
+    // Ruling is in the export because the list now carries non-approved and
+    // cancelled products too — without it an exported report reads as if every
+    // row were approved.
+    const headers = ["Establishment Name", "Product Name", "Brand Name", "Ruling", "Verified", "Date"];
     const rows = products.map((p) => [
         `"${establishmentName.replace(/"/g, '""')}"`,
         `"${p.productName.replace(/"/g, '""')}"`,
         `"${p.brandName.replace(/"/g, '""')}"`,
+        `"${p.ruling}"`,
         verifiedSet.has(p.id) ? "Yes" : "No",
         today,
     ]);
@@ -250,6 +265,10 @@ export default function EstablishmentPage({
 
     const verifiedCount = allProducts.filter((p) => verifiedIds.has(p.id)).length;
     const totalCount = allProducts.length;
+    // Every product on the sheet is listed; only some of them are approved.
+    const approvedCount = allProducts.filter((p) => isApproved(p.ruling)).length;
+    const flaggedCount = allProducts.filter((p) => isFlagged(p.ruling)).length;
+    const reviewCount = totalCount - approvedCount - flaggedCount;
     const progressPct = totalCount > 0 ? (verifiedCount / totalCount) * 100 : 0;
 
     const handleGenerateReport = () => {
@@ -323,6 +342,17 @@ export default function EstablishmentPage({
                     </p>
                 )}
 
+                {/* Ruling breakdown — the whole sheet is listed below, so say
+                    plainly how much of it is actually approved. */}
+                <p className="ruling-summary mt-2">
+                    <span className="ruling-summary-approved">{approvedCount} approved</span>
+                    {flaggedCount > 0 && (
+                        <span className="ruling-summary-flagged"> · {flaggedCount} not approved or cancelled</span>
+                    )}
+                    {reviewCount > 0 && (
+                        <span className="ruling-summary-review"> · {reviewCount} under review</span>
+                    )}
+                </p>
             </div>
 
             {/* ── Divider ──────────────────────────── */}

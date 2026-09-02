@@ -37,6 +37,7 @@
   --r-pill: 999px;
   --verified-bg: rgba(0, 210, 106, 0.10);
   --verified-color: #00D26A;
+  --flagged-bg: rgba(255, 69, 69, 0.08);
   --progress-bg: #1A1A1A;
   --progress-fill: #00D26A;
 }
@@ -67,6 +68,7 @@ html.light-mode {
   --shadow-glow: 0 0 16px rgba(0, 122, 255, 0.08);
   --verified-bg: rgba(29, 141, 74, 0.10);
   --verified-color: #1D8D4A;
+  --flagged-bg: rgba(255, 59, 48, 0.07);
   --progress-bg: #E5E5EA;
   --progress-fill: #1D8D4A;
 }
@@ -309,6 +311,75 @@ html.light-mode {
 
 .product-row.verified {
   background: var(--verified-bg);
+}
+
+/* Not Approved / Cancelled. These sort to the bottom of the list, so the red
+   is a confirmation of where you are, not the only signal — colour alone never
+   carries the ruling, the tag next to the name spells it out. */
+.product-row.flagged {
+  background: var(--flagged-bg);
+  border-left: 3px solid var(--clr-destructive);
+  padding-left: 17px; /* 20px - 3px border, so names stay in one column */
+}
+
+.product-row.flagged .product-name,
+.product-row.flagged .product-brand {
+  color: var(--clr-destructive);
+}
+
+/* Verified still wins visually — an inspector needs to see what they ticked. */
+.product-row.flagged.verified {
+  background: var(--verified-bg);
+}
+
+/* ── Ruling Tag ─────────────────────────────── */
+/* Sits inline after the product name, wrapping with it rather than squeezing
+   the name into truncation on a phone. */
+.ruling-tag {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 6px;
+  border-radius: var(--r-sm);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  vertical-align: 2px;
+}
+
+.ruling-tag.flagged {
+  color: var(--clr-destructive);
+  background: var(--flagged-bg);
+  border: 1px solid var(--clr-destructive);
+}
+
+.ruling-tag.review {
+  color: var(--clr-warning);
+  background: transparent;
+  border: 1px solid var(--clr-warning);
+}
+
+/* ── Ruling Summary ─────────────────────────── */
+.ruling-summary {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-tertiary);
+}
+
+.ruling-summary-approved {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.ruling-summary-flagged {
+  color: var(--clr-destructive);
+}
+
+.ruling-summary-review {
+  color: var(--clr-warning);
 }
 
 /* Product name: the primary read. Sans, not mono — mono costs ~15% width per

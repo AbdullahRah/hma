@@ -124,6 +124,8 @@ Not yet addressed — see the summary in conversation for the reasoning.
 
 - **No offline support.** No service worker, so a dead spot in a walk-in freezer
   means a blank page on reload. The strongest remaining field improvement.
-- **Long lists have no jump-to-letter index.** Paramount Fine Foods is 663 rows.
-- **Rulings are not shown.** Pending client input — see `data/README.md`.
+- **Long lists have no jump-to-letter index.** Paramount Fine Foods is 662 rows.
+- **Long lists have no ruling filter.** Non-approved and cancelled products are
+  shown in red and sorted to the bottom of each list, but there is no way to hide
+  them. Worth adding if a client asks to print an approved-only sheet.
 - **Ticks are per-device.** See the trade-off note in `ARCHITECTURE.md`.

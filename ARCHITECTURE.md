@@ -153,7 +153,7 @@ Nothing to keep patched, nothing to break on an upgrade.
 Recorded so they are decisions, not surprises.
 
 **Changing a sheet requires a rebuild and redeploy.** That is the price of having
-no database and no backend. At 34 clients with a sheet arriving now and then, it
+no database and no backend. At 30 clients with a sheet arriving now and then, it
 is the right call. *Revisit if sheets start changing daily* — that is the signal
 that the data belongs behind an API instead of in the bundle.
 
@@ -162,8 +162,15 @@ browser's `localStorage`, so two inspectors auditing the same site do not see
 each other's progress, and clearing site data wipes it. Fine for one inspector
 per visit; needs a backend the day audits are shared or reviewed remotely.
 
-**Rulings are captured but not displayed.** See the open question at the end of
-[`data/README.md`](data/README.md).
+**Rulings come from two columns, not one.** The ruling column is authoritative,
+but most workbooks also carry a `Comments (Level I)` (or `Remarks`) cell holding
+a phrase lifted from that workbook's own "Definition" legend sheet — which makes
+it a second, indirect record of the same verdict. The build reads both: the
+legend fills a blank ruling column, and a legend phrase *stricter* than the
+column marks the product `Under Review` rather than picking a side. The legend is
+read per workbook, never pooled across them, because one phrase ("Did not receive
+adequate information from Manufacturer") means `Not Approved` on 25 sheets and
+`Undetermined` on 2. See [`data/README.md`](data/README.md).
 
 **The build depends on workbooks outside the repo.** `npm run build:data` needs
 `../Restaurants Product List` (or `HMA_SHEETS_DIR`). A fresh clone can run the

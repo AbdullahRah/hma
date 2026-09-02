@@ -47,8 +47,12 @@ function EstablishmentRow({ establishment }: { establishment: Establishment }) {
           <p className="text-[17px] font-semibold tracking-tight truncate" style={{ color: "var(--text-primary)" }}>
             {establishment.name}
           </p>
+          {/* Approved is a count of products actually ruled approved — the rest
+              of the sheet is still listed, just not counted here. */}
           <p className="text-[14px] mt-0.5" style={{ color: "var(--text-secondary)", fontFamily: "var(--font-mono)" }}>
-            {establishment.productCount} {establishment.productCount === 1 ? "product" : "products"} approved
+            {establishment.approvedCount === establishment.productCount
+              ? `${establishment.productCount} ${establishment.productCount === 1 ? "product" : "products"} approved`
+              : `${establishment.approvedCount} of ${establishment.productCount} approved`}
           </p>
         </div>
         <span style={{ color: "var(--accent)" }} className="flex-shrink-0">
