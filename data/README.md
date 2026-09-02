@@ -54,8 +54,12 @@ Enforced by `scripts/normalize.mjs` on build and re-checked by
    different ways (`Ruling`, `Second Level Check (Yes/No)`,
    `Second Level Check (Approved/Not Approved)`, `Permissible (Yes / No)`). They
    all map onto: `HMA Certified`, `Approved`, `Not Approved`, `Cancelled`,
-   `Under Review` (blank or `TBD`).
-7. **Ids are slugs of names** — apostrophes drop rather than becoming dashes
+   `Under Review` (blank or `TBD`). See **Where a ruling hides** below for the
+   second place a verdict can be recorded.
+7. **Brand falls back to the manufacturer.** A blank `Brand Name` takes the
+   sheet's own `Manufacturer / Brand Owner / Client` value. Bulk raw materials
+   ("Leek", "Onion Yellow Foodservice") genuinely have no brand and stay blank.
+8. **Ids are slugs of names** — apostrophes drop rather than becoming dashes
    (`Galito's Flame` → `galitos-flame`).
 
 ## Rebuilding
@@ -140,15 +144,60 @@ Open the client's page and spot-check a product you know is new on the sheet.
 - **A product reads oddly after import** (a brand title-cased that shouldn't be)
   — add the token to `KEEP_UPPER` in `scripts/normalize.mjs` and rebuild.
 
-## Open question: rulings are captured but not shown
+## Where a ruling hides
 
-Every product carries a `ruling`, but the UI currently lists **all** products
-regardless of it — 169 `Not Approved` and 54 `Cancelled` records are shown the
-same as approved ones, and the counters read "N products approved".
+A sheet can record the same verdict in two places, and for one client it only
+ever used the second one.
 
-This is deliberate for now, pending client input on how non-approved items should
-be handled. When that comes back, the options are: badge non-approved rows,
-filter them out, or leave as is — and either way the counter labels should be
-corrected. Largest gaps: Passage to India (139 of 139 have no recorded ruling),
-Paramount Fine Foods (63 of 663), Chick Fiesta (27 of 116), D Spot Dessert Café
-(26 of 565).
+Most workbooks carry a **"Definition" sheet** — a legend of
+`Product Type | Selection | Definition`. The auditor picks a phrase from
+**Selection** into the row's `Comments (Level I)` cell (some sheets use
+`Remarks`), and the legend's **Product Type** is the verdict that phrase stands
+for. `scripts/build-data.mjs` reads that legend and resolves each row with
+`resolveRuling()`:
+
+| Ruling column | Level I note | Result |
+| --- | --- | --- |
+| filled | none, or not in the legend | the column |
+| **blank** | **a legend phrase** | **the legend's verdict** |
+| filled | legend agrees | the column |
+| filled | legend is **stricter** | `Under Review` — the sheet contradicts itself |
+| filled | legend is looser | the column — a note does not upgrade an entry |
+
+The legend is read **per workbook and never pooled**: the phrase "Did not receive
+adequate information from Manufacturer" is `Not Approved` on 25 sheets and
+`Undetermined` on 2, so only a workbook's own Definition sheet may decode it.
+
+This is what recovers **Passage to India**, whose `Second Level Check` column was
+left empty on all 139 rows while Level I was filled on all 139 — it read as 139
+"Under Review" products and now reads as 131 Approved and 7 HMA Certified.
+
+Across every workbook this leaves **11 products genuinely `Under Review`**: 7 the
+sheets contradict themselves on, and 4 with no verdict recorded anywhere. There
+are no cell comments or notes anywhere in the workbooks — checked at the ZIP
+level for `xl/comments*.xml`, `xl/threadedComments/`, and `vmlDrawing*.vml`.
+
+## How rulings are shown
+
+Every product is listed whatever its ruling — nothing is filtered out.
+
+- **Not Approved / Cancelled** render in red with a tag, and sort to the bottom
+  of the establishment's list.
+- **Under Review** renders with an amber tag and sorts between the two.
+- Alphabetical order applies *within* each band, never across them.
+- "N approved" counters count `Approved` + `HMA Certified` only.
+
+## Roster
+
+Dropped from the tool (`EXCLUDED_ESTABLISHMENTS` in `scripts/build-data.mjs`) —
+their source files stay on disk, delete a line to bring one back:
+
+| Establishment | Why |
+| --- | --- |
+| The Dum Biryani | no longer an HMA client |
+| Texas Wild BBQ | no longer an HMA client |
+| Hyperama Lekker Restuarant | no longer an HMA client |
+| IGY Immune Technologies | non-meat client, not a restaurant |
+
+Awaiting sheets (`AWAITING_SHEETS`) — every build prints these until the
+workbook folder appears: **Fortinos**, **Loblaws**, **North Kabob**.

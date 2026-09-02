@@ -27,6 +27,16 @@ const RULINGS = ["HMA Certified", "Approved", "Not Approved", "Cancelled", "Unde
 
 export { RULINGS };
 
+// How restrictive each verdict is. Only used to compare the ruling column
+// against the Level I note when a sheet carries both — see resolveRuling.
+const STRICTNESS = {
+    "HMA Certified": 0,
+    "Approved": 1,
+    "Under Review": 2,
+    "Not Approved": 3,
+    "Cancelled": 4,
+};
+
 /** Collapse whitespace and strip stray wrapping punctuation. */
 export function tidy(value) {
     return String(value ?? "")
@@ -95,6 +105,51 @@ export function normalizeRuling(value) {
     return "Under Review";
 }
 
+/**
+ * Map a Definition sheet's "Product Type" onto the tool's ruling vocabulary.
+ *
+ * Most workbooks carry a "Definition" sheet — a legend of
+ * `Product Type | Selection | Definition`. The auditor picks a phrase from
+ * Selection into the row's `Comments (Level I)` cell, which makes that column a
+ * second, indirect record of the verdict. Returns "" for anything unrecognized
+ * so callers can tell "no legend verdict" from "legend says Under Review".
+ */
+export function normalizeLegendType(value) {
+    const cleaned = tidy(value).toLowerCase();
+    if (cleaned === "hma certified") return "HMA Certified";
+    if (cleaned === "approved") return "Approved";
+    if (cleaned === "not approved") return "Not Approved";
+    if (cleaned === "cancelled" || cleaned === "canceled") return "Cancelled";
+    // "Undetermined" and "Under Review" both mean the same thing to the tool:
+    // nobody has ruled on this yet.
+    if (cleaned === "undetermined" || cleaned === "under review") {
+        return "Under Review";
+    }
+    return "";
+}
+
+/**
+ * Settle a product's ruling from the two places a sheet can record one: the
+ * ruling column, and the Level I note decoded through the Definition legend.
+ *
+ * - Column filled, no legend verdict → the column.
+ * - Column blank → the legend verdict. This is what recovers Passage to India,
+ *   where the second-level column was never filled in but Level I was.
+ * - Both, and the legend is *stricter* → "Under Review". The sheet contradicts
+ *   itself (e.g. ruling says Approved, Level I says "Product Contains
+ *   Alcohol"); surfacing it beats silently trusting either side.
+ * - Both, and the legend is looser → the column. An auditor's explicit entry is
+ *   not overridden by a note that would only upgrade it.
+ */
+export function resolveRuling(columnValue, legendRuling = "") {
+    const legend = RULINGS.includes(legendRuling) ? legendRuling : "";
+    if (!tidy(columnValue)) return legend || "Under Review";
+
+    const column = normalizeRuling(columnValue);
+    if (!legend || legend === column) return column;
+    return STRICTNESS[legend] > STRICTNESS[column] ? "Under Review" : column;
+}
+
 /** URL-safe id: apostrophes vanish, everything else collapses to one dash. */
 export function slugify(name) {
     return tidy(name)
@@ -124,7 +179,11 @@ export function normalizeProducts(rows) {
         const key = `${productName.toLowerCase()}|${brand.toLowerCase()}`;
         if (seen.has(key)) continue;
         seen.add(key);
-        products.push({ productName, brand, ruling: normalizeRuling(row.ruling) });
+        products.push({
+            productName,
+            brand,
+            ruling: resolveRuling(row.ruling, row.legendRuling),
+        });
     }
     products.sort(
         (a, b) =>

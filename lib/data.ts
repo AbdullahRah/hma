@@ -1,4 +1,10 @@
-import { Establishment, Product, RawEstablishment } from "./types";
+import {
+    Establishment,
+    Product,
+    RawEstablishment,
+    isApproved,
+    rulingRank,
+} from "./types";
 import rawEstablishments from "@/data/establishments.json";
 
 // ─── Establishments ──────────────────────────────────────
@@ -14,6 +20,7 @@ const ESTABLISHMENTS: Establishment[] = SHEETS.map((s) => ({
     id: s.id,
     name: s.name,
     productCount: s.products.length,
+    approvedCount: s.products.filter((p) => isApproved(p.ruling)).length,
 }));
 
 // ─── Helpers ─────────────────────────────────────────────
@@ -32,13 +39,19 @@ function byProductName(a: Product, b: Product): number {
     );
 }
 
+/**
+ * Approved products first, then anything still under review, then the
+ * ruled-against ones. Alphabetical order is the tie-break *within* a band, so
+ * every band reads A–Z and non-approved items never sit among approved ones.
+ */
+function byRulingThenName(a: Product, b: Product): number {
+    return rulingRank(a.ruling) - rulingRank(b.ruling) || byProductName(a, b);
+}
+
 // ─── Establishments (read-only) ──────────────────────────
 
 export function getEstablishments(): Establishment[] {
-    return ESTABLISHMENTS.map((e) => ({
-        ...e,
-        productCount: getProductsForEstablishment(e.id).length,
-    })).sort(byName);
+    return [...ESTABLISHMENTS].sort(byName);
 }
 
 export function getEstablishmentById(id: string): Establishment | undefined {
@@ -81,7 +94,7 @@ function getSheetProducts(establishmentId: string): Product[] {
 }
 
 export function getProductsForEstablishment(establishmentId: string): Product[] {
-    return getSheetProducts(establishmentId).sort(byProductName);
+    return getSheetProducts(establishmentId).sort(byRulingThenName);
 }
 
 export function searchProducts(
