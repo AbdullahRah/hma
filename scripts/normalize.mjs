@@ -27,16 +27,6 @@ const RULINGS = ["HMA Certified", "Approved", "Not Approved", "Cancelled", "Unde
 
 export { RULINGS };
 
-// How restrictive each verdict is. Only used to compare the ruling column
-// against the Level I note when a sheet carries both — see resolveRuling.
-const STRICTNESS = {
-    "HMA Certified": 0,
-    "Approved": 1,
-    "Under Review": 2,
-    "Not Approved": 3,
-    "Cancelled": 4,
-};
-
 /** Collapse whitespace and strip stray wrapping punctuation. */
 export function tidy(value) {
     return String(value ?? "")
@@ -129,25 +119,22 @@ export function normalizeLegendType(value) {
 }
 
 /**
- * Settle a product's ruling from the two places a sheet can record one: the
- * ruling column, and the Level I note decoded through the Definition legend.
+ * Settle a product's ruling. The ruling column is the only authority: whatever
+ * it says is what the product shows.
  *
- * - Column filled, no legend verdict → the column.
- * - Column blank → the legend verdict. This is what recovers Passage to India,
- *   where the second-level column was never filled in but Level I was.
- * - Both, and the legend is *stricter* → "Under Review". The sheet contradicts
- *   itself (e.g. ruling says Approved, Level I says "Product Contains
- *   Alcohol"); surfacing it beats silently trusting either side.
- * - Both, and the legend is looser → the column. An auditor's explicit entry is
- *   not overridden by a note that would only upgrade it.
+ * The Level I / Remarks note is *not* a second opinion. HMA (Nouman, 2026-09-04)
+ * confirmed those notes must never influence a verdict, so a note that disagrees
+ * with a filled column is ignored — the column stands.
+ *
+ * The one thing the note still does is fill a genuinely **blank** column, by way
+ * of the workbook's own Definition legend. That is not a fallback opinion, it is
+ * the only place the verdict was ever written down: Passage to India left the
+ * `Second Level Check` column empty on all 139 rows and recorded the ruling one
+ * column over. Blank column and no legend phrase → "Under Review".
  */
 export function resolveRuling(columnValue, legendRuling = "") {
-    const legend = RULINGS.includes(legendRuling) ? legendRuling : "";
-    if (!tidy(columnValue)) return legend || "Under Review";
-
-    const column = normalizeRuling(columnValue);
-    if (!legend || legend === column) return column;
-    return STRICTNESS[legend] > STRICTNESS[column] ? "Under Review" : column;
+    if (tidy(columnValue)) return normalizeRuling(columnValue);
+    return RULINGS.includes(legendRuling) ? legendRuling : "Under Review";
 }
 
 /** URL-safe id: apostrophes vanish, everything else collapses to one dash. */

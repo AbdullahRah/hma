@@ -286,7 +286,7 @@
       {
         "productName": "Greek Vinaigrette Dressing",
         "brand": "Hellmanns",
-        "ruling": "Under Review"
+        "ruling": "Approved"
       },
       {
         "productName": "Honey garlic Sauce",
@@ -837,7 +837,7 @@
       {
         "productName": "Brickman's Cheddar Cheese Mild Yellow",
         "brand": "Brickman's",
-        "ruling": "Under Review"
+        "ruling": "Approved"
       },
       {
         "productName": "Brickman's Mustard",
@@ -6985,6 +6985,19 @@
     ]
   },
   {
+    "id": "fortinos",
+    "name": "Fortinos",
+    "source": "Emailed by HMA — one product so far, no audit workbook issued yet.",
+    "sheetDate": "",
+    "products": [
+      {
+        "productName": "HMA Certified Seasoned Whole Chicken",
+        "brand": "",
+        "ruling": "HMA Certified"
+      }
+    ]
+  },
+  {
     "id": "galitos-flame",
     "name": "Galito's Flame",
     "source": "Product List - Galito's Flame - 2025-02-10.xlsx",
@@ -7556,7 +7569,7 @@
       {
         "productName": "Kraft, Calorie Wise Creamy Poppyseed Dressing",
         "brand": "Kraft",
-        "ruling": "Under Review"
+        "ruling": "Approved"
       },
       {
         "productName": "Kraft, Three Cheese Ranch Dressing",
@@ -7601,7 +7614,7 @@
       {
         "productName": "McCain Breaded Processed Part Skim Mozzarella Cheese Product Sticks",
         "brand": "McCain",
-        "ruling": "Under Review"
+        "ruling": "Approved"
       },
       {
         "productName": "Medium Sauce",
@@ -7761,7 +7774,7 @@
       {
         "productName": "Tre Stelle, Parmesan Cheese, Grated 30% M.F.",
         "brand": "Arla Foods",
-        "ruling": "Under Review"
+        "ruling": "Approved"
       },
       {
         "productName": "Vinegar White Distilled 5% Clean Label",
@@ -7804,7 +7817,7 @@
       {
         "productName": "Agropur Shredded Pub Mix Cheese Blend, 25% M.F",
         "brand": "Agropur",
-        "ruling": "Under Review"
+        "ruling": "Approved"
       },
       {
         "productName": "Allen's Red Wine Vinegar",
@@ -8877,7 +8890,7 @@
       {
         "productName": "Reser's Fine Foods, Potatoes Mashed Yukon Natural 4/5 lb",
         "brand": "Reser's Fine Foods",
-        "ruling": "Under Review"
+        "ruling": "Approved"
       },
       {
         "productName": "Reser's Fine Foods, Yukon Gold Mashed Potatoes With Skin On & Parmesan Cheese",
@@ -10774,6 +10787,19 @@
     ]
   },
   {
+    "id": "loblaws",
+    "name": "Loblaws",
+    "source": "Emailed by HMA — one product so far, no audit workbook issued yet.",
+    "sheetDate": "",
+    "products": [
+      {
+        "productName": "HMA Halal BBQ Whole Chicken",
+        "brand": "",
+        "ruling": "HMA Certified"
+      }
+    ]
+  },
+  {
     "id": "mamas-meat-shop",
     "name": "Mama's Meat Shop",
     "source": "Product List - Mama's Meat Shop - 2023-03-21.xlsx",
@@ -11305,6 +11331,94 @@
       {
         "productName": "Tostitos Medium Salsa",
         "brand": "Tostitos",
+        "ruling": "Approved"
+      }
+    ]
+  },
+  {
+    "id": "north-kabab",
+    "name": "North Kabab",
+    "source": "Product List - North Kabab - 2026-04-25.xlsx",
+    "sheetDate": "2026-04-25",
+    "products": [
+      {
+        "productName": "Elegant, Dahi Yogurt, 3.25% M.F.",
+        "brand": "Elegant",
+        "ruling": "Approved"
+      },
+      {
+        "productName": "HarvestEdge, Three Stars, Strong Bakers Flour",
+        "brand": "HarvestEdge",
+        "ruling": "Approved"
+      },
+      {
+        "productName": "Ho-Ya, Sambal Oelek, Chili Paste",
+        "brand": "Ho-Ya",
+        "ruling": "Approved"
+      },
+      {
+        "productName": "Mantab, Palace, Pepperoncini Peppers",
+        "brand": "Palace",
+        "ruling": "Approved"
+      },
+      {
+        "productName": "Marjan, Rice",
+        "brand": "Marjan",
+        "ruling": "Approved"
+      },
+      {
+        "productName": "Natrel, Butter, Unsalted",
+        "brand": "Natrel",
+        "ruling": "Approved"
+      },
+      {
+        "productName": "ReaLime, Lemon Juice",
+        "brand": "ReaLemon",
+        "ruling": "Approved"
+      },
+      {
+        "productName": "Sauce Craft, Tomato Ketchup",
+        "brand": "Sauce Craft",
+        "ruling": "Approved"
+      },
+      {
+        "productName": "Sealtest, Whipping Cream, 35% M.F.",
+        "brand": "Sealtest",
+        "ruling": "Approved"
+      },
+      {
+        "productName": "Sifto, Table Salt",
+        "brand": "Sifto",
+        "ruling": "Approved"
+      },
+      {
+        "productName": "Trupti, Coriander, Ground",
+        "brand": "Trupti",
+        "ruling": "Approved"
+      },
+      {
+        "productName": "Trupti, Garlic, Granulated",
+        "brand": "Trupti",
+        "ruling": "Approved"
+      },
+      {
+        "productName": "Trupti, Mint Leaves, Rubbed",
+        "brand": "Trupti",
+        "ruling": "Approved"
+      },
+      {
+        "productName": "Trupti, Paprika",
+        "brand": "Trupti",
+        "ruling": "Approved"
+      },
+      {
+        "productName": "Trupti, Sumac",
+        "brand": "Trupti",
+        "ruling": "Approved"
+      },
+      {
+        "productName": "Tupling Farms, Canada No 1 Potatoes",
+        "brand": "Tupling Farms",
         "ruling": "Approved"
       }
     ]

@@ -162,15 +162,18 @@ browser's `localStorage`, so two inspectors auditing the same site do not see
 each other's progress, and clearing site data wipes it. Fine for one inspector
 per visit; needs a backend the day audits are shared or reviewed remotely.
 
-**Rulings come from two columns, not one.** The ruling column is authoritative,
-but most workbooks also carry a `Comments (Level I)` (or `Remarks`) cell holding
-a phrase lifted from that workbook's own "Definition" legend sheet — which makes
-it a second, indirect record of the same verdict. The build reads both: the
-legend fills a blank ruling column, and a legend phrase *stricter* than the
-column marks the product `Under Review` rather than picking a side. The legend is
-read per workbook, never pooled across them, because one phrase ("Did not receive
-adequate information from Manufacturer") means `Not Approved` on 25 sheets and
-`Undetermined` on 2. See [`data/README.md`](data/README.md).
+**The ruling column is the only authority — with one narrow exception.** Most
+workbooks also carry a `Comments (Level I)` (or `Remarks`) cell holding a phrase
+from that workbook's own "Definition" legend sheet, which reads like a second
+record of the verdict. It is not one: HMA confirmed (Nouman, 2026-09-04) those
+notes must never influence a ruling, so a note that disagrees with a filled
+column is ignored and the column stands. The build reads the legend only to
+recover a verdict that was **never written in the ruling column at all** —
+Passage to India left `Second Level Check` empty on all 139 rows and recorded the
+ruling one column over. The legend is read per workbook, never pooled across
+them, because one phrase ("Did not receive adequate information from
+Manufacturer") means `Not Approved` on 25 sheets and `Undetermined` on 2. See
+[`data/README.md`](data/README.md).
 
 **The build depends on workbooks outside the repo.** `npm run build:data` needs
 `../Restaurants Product List` (or `HMA_SHEETS_DIR`). A fresh clone can run the

@@ -8,7 +8,7 @@ list in the tool. It is **generated** — edit the sources, not this file.
 
 ```
 Restaurants Product List/<Client>/Product List - <Client> - <date>.xlsx   ← client workbooks (outside the repo)
-data/sources/*.json                                                       ← clients with no workbook (IGY)
+data/sources/*.json                                                       ← clients with no workbook (IGY, Fortinos, Loblaws)
         │
         │  npm run build:data
         ▼
@@ -55,7 +55,7 @@ Enforced by `scripts/normalize.mjs` on build and re-checked by
    `Second Level Check (Approved/Not Approved)`, `Permissible (Yes / No)`). They
    all map onto: `HMA Certified`, `Approved`, `Not Approved`, `Cancelled`,
    `Under Review` (blank or `TBD`). See **Where a ruling hides** below for the
-   second place a verdict can be recorded.
+   one case where a verdict is recorded somewhere other than that column.
 7. **Brand falls back to the manufacturer.** A blank `Brand Name` takes the
    sheet's own `Manufacturer / Brand Owner / Client` value. Bulk raw materials
    ("Leek", "Onion Yellow Foodservice") genuinely have no brand and stay blank.
@@ -132,6 +132,32 @@ npm run dev
 
 Open the client's page and spot-check a product you know is new on the sheet.
 
+### When a client arrives without a sheet
+
+Some clients open with a product or two in an email rather than a workbook —
+Fortinos and Loblaws each began that way. They live as hand-maintained JSON in
+`data/sources/`, the same mechanism IGY uses:
+
+```jsonc
+{
+  "name": "Fortinos",
+  "source": "Emailed by HMA — one product so far, no audit workbook issued yet.",
+  "sheetDate": "",                                    // no dated sheet to cite
+  "products": [
+    { "productName": "HMA Certified Seasoned Whole Chicken", "brand": "", "ruling": "HMA Certified" }
+  ]
+}
+```
+
+Adding more products later is appending to that `products` array and rebuilding —
+the entry, its id and its URL do not change. Brands stay `""` unless HMA states
+one; the UI renders `—`. Add the client to `AWAITING_SHEETS` too, so every build
+keeps saying the full sheet is still outstanding.
+
+**When the real workbook finally arrives**, drop the folder in *and delete the
+`data/sources/*.json` stub* — a client with both would trip
+`Duplicate establishment id`.
+
 ### If the build complains
 
 - **`No product table found in <Client>/<file>`** — the header row uses a column
@@ -146,36 +172,42 @@ Open the client's page and spot-check a product you know is new on the sheet.
 
 ## Where a ruling hides
 
-A sheet can record the same verdict in two places, and for one client it only
-ever used the second one.
+**The ruling column is the only authority.** Whatever it says is what the
+product shows — nothing else may change it.
 
-Most workbooks carry a **"Definition" sheet** — a legend of
+Most workbooks also carry a **"Definition" sheet**: a legend of
 `Product Type | Selection | Definition`. The auditor picks a phrase from
 **Selection** into the row's `Comments (Level I)` cell (some sheets use
 `Remarks`), and the legend's **Product Type** is the verdict that phrase stands
-for. `scripts/build-data.mjs` reads that legend and resolves each row with
-`resolveRuling()`:
+for — which makes that column *look* like a second record of the ruling.
+
+It is not one. HMA (Nouman, 2026-09-04) confirmed the Level I / Remarks notes
+must be ignored entirely when deciding a ruling. `resolveRuling()` reads the
+legend for exactly one purpose: to recover a verdict that was never written in
+the ruling column at all.
 
 | Ruling column | Level I note | Result |
 | --- | --- | --- |
-| filled | none, or not in the legend | the column |
+| filled | anything, agreeing or not | **the column** |
 | **blank** | **a legend phrase** | **the legend's verdict** |
-| filled | legend agrees | the column |
-| filled | legend is **stricter** | `Under Review` — the sheet contradicts itself |
-| filled | legend is looser | the column — a note does not upgrade an entry |
+| blank | none, or not in the legend | `Under Review` |
 
 The legend is read **per workbook and never pooled**: the phrase "Did not receive
 adequate information from Manufacturer" is `Not Approved` on 25 sheets and
 `Undetermined` on 2, so only a workbook's own Definition sheet may decode it.
 
-This is what recovers **Passage to India**, whose `Second Level Check` column was
-left empty on all 139 rows while Level I was filled on all 139 — it read as 139
-"Under Review" products and now reads as 131 Approved and 7 HMA Certified.
+The blank-column recovery exists for **Passage to India**, whose
+`Second Level Check` column was left empty on all 139 rows while Level I was
+filled on 138 — it read as 139 "Under Review" products and now reads as 131
+Approved, 7 HMA Certified and 1 Under Review. It also recovers one row on **The
+Kabab Shoppe** — `Sunspun Shredded Pub Recipe Cheese Blend, 27% M.F.`, blank
+ruling cell, `Not Approved` via its `Remarks` phrase — the only other blank
+ruling cell in any workbook.
 
-Across every workbook this leaves **11 products genuinely `Under Review`**: 7 the
-sheets contradict themselves on, and 4 with no verdict recorded anywhere. There
-are no cell comments or notes anywhere in the workbooks — checked at the ZIP
-level for `xl/comments*.xml`, `xl/threadedComments/`, and `vmlDrawing*.vml`.
+Across every workbook this leaves **4 products genuinely `Under Review`** — no
+verdict recorded anywhere, in either column. There are no cell comments or notes
+anywhere in the workbooks — checked at the ZIP level for `xl/comments*.xml`,
+`xl/threadedComments/`, and `vmlDrawing*.vml`.
 
 ## How rulings are shown
 
@@ -199,5 +231,11 @@ their source files stay on disk, delete a line to bring one back:
 | Hyperama Lekker Restuarant | no longer an HMA client |
 | IGY Immune Technologies | non-meat client, not a restaurant |
 
-Awaiting sheets (`AWAITING_SHEETS`) — every build prints these until the
-workbook folder appears: **Fortinos**, **Loblaws**, **North Kabob**.
+Awaiting workbooks (`AWAITING_SHEETS`) — every build prints these until the
+workbook folder appears: **Fortinos**, **Loblaws**.
+
+Both are already in the tool with a **provisional entry** built from a single
+product HMA sent by email (`data/sources/fortinos.json`,
+`data/sources/loblaws.json`). The reminder tracks *workbooks*, not entries, so it
+keeps printing until the real sheet lands — and says how many products the stub
+is standing in with.

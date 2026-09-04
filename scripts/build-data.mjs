@@ -36,8 +36,10 @@ const RULING_HEADERS = [
     /^second level check/i,
     /^permissible/i,
 ];
-// Where a verdict hides when the ruling column was left blank. Both hold
-// phrases lifted verbatim from the workbook's own "Definition" legend sheet.
+// Read only to recover a verdict the ruling column never recorded (Passage to
+// India). Both hold phrases lifted verbatim from the workbook's own "Definition"
+// legend sheet. A note never overrides a ruling column that is filled in — see
+// resolveRuling in normalize.mjs.
 const LEVEL_ONE_HEADERS = [/^comments \(level i\)$/i];
 const REMARKS_HEADERS = [/^remarks$/i];
 // Fallback for a blank brand cell: the sheet's own record of who makes the
@@ -65,10 +67,15 @@ const EXCLUDED_ESTABLISHMENTS = new Set([
     "igy-immune-technologies",  // non-meat client, not a restaurant
 ]);
 
-// Clients whose sheets have not arrived yet. Listed so every build says out
+// Clients whose workbook has not arrived yet. Listed so every build says out
 // loud what the tool is still missing; drop a workbook folder in and the name
 // disappears from the reminder on its own.
-const AWAITING_SHEETS = ["Fortinos", "Loblaws", "North Kabob"];
+//
+// A name stays here even once it has an entry in data/sources — Fortinos and
+// Loblaws were opened from a single emailed product each, so the tool shows
+// them but their real sheet is still outstanding. The reminder tracks
+// *workbooks*, not entries, so it keeps saying so.
+const AWAITING_SHEETS = ["Fortinos", "Loblaws"];
 
 function findHeader(headers, patterns) {
     for (const pattern of patterns) {
@@ -230,7 +237,8 @@ function summarizeChanges(next) {
 
     console.log("\nChanges:");
     for (const e of added) {
-        console.log(`  + NEW      ${e.name} — ${e.products.length} products from ${e.source}`);
+        const count = `${e.products.length} product${e.products.length === 1 ? "" : "s"}`;
+        console.log(`  + NEW      ${e.name} — ${count} from ${e.source}`);
     }
     for (const e of removed) {
         console.log(
@@ -306,13 +314,20 @@ function main() {
         );
     }
 
-    const stillMissing = AWAITING_SHEETS.filter(
-        (name) => !establishments.some((e) => e.id === slugify(name))
-    );
+    const workbookIds = new Set(fromWorkbooks.map((e) => e.id));
+    const stillMissing = AWAITING_SHEETS.filter((name) => !workbookIds.has(slugify(name)));
     if (stillMissing.length) {
-        console.log(`\nAwaiting sheets — not yet in the tool:`);
+        console.log(`\nAwaiting workbooks:`);
         for (const name of stillMissing) {
-            console.log(`  · ${name} — add "${name}/Product List - ${name} - YYYY-MM-DD.xlsx"`);
+            const provisional = establishments.find((e) => e.id === slugify(name));
+            console.log(
+                `  · ${name} — ` +
+                    (provisional
+                        ? `provisional entry only (${provisional.products.length} product` +
+                          `${provisional.products.length === 1 ? "" : "s"} from data/sources); ` +
+                          `full sheet still outstanding`
+                        : `add "${name}/Product List - ${name} - YYYY-MM-DD.xlsx"`)
+            );
         }
     }
 
